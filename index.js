@@ -6,10 +6,64 @@
 const http = require("http");
 const url = require("url");
 const StringDecoder = require("string_decoder").StringDecoder;
+const https = require("https");
+const fs = require("fs");
 const config = require("./config");
+const _data = require('./lib/data');
 
-// The server should respond to all requests with a string
-const server = http.createServer(function (req, res) {
+// TESTING
+// @TODO delete this.
+// _data.create('test', 'newFile', {'foo': 'bar'}, function(err) {
+//     console.log("This was the error", err);
+// });
+// _data.read('test', 'newFile', function(err, data) {
+//     console.log("This was the error while reading file: ", err);
+//     console.log("This is the data from file:", data);
+// });
+// _data.update('test', 'newFile', {'fizz': 'buzz'}, function(err) {
+//     console.log("This was the error while updating", err);
+// });
+// _data.delete('test', 'newFile', function(err) {
+//     console.log("Error while deleting file: ", err);
+// });
+
+// Intsantiate the http server
+const httpServer = http.createServer(function (req, res) {
+    unifiedServer(req, res);
+});
+
+// Instantiate the https server.
+let httpsServerOptions =  {
+    "key": fs.readFileSync("./https/key.pem"),
+    "cert": fs.readFileSync("./https/cert.pem")
+};
+
+const httpsServer = https.createServer(httpsServerOptions, function (err, res) {
+    unifiedServer(req, res);
+});
+
+
+// Define route handlers.
+let handlers = {};
+
+// Ping handler, to check the health of app.
+handlers.ping = function (data, callback) {
+    // Callback a http status code, and a payload object (JSON).
+    callback(200);
+};
+
+// Not found handler.
+handlers.notFound = function (data, callback) {
+    callback(404);
+};
+
+// Defining a request router.
+let router = {
+    "ping": handlers.ping
+}
+
+// All the server logic for both the thtp and https server.
+let unifiedServer = function (req, res) {
     // Get the url and parse it.
     let parsedUrl = url.parse(req.url, true);
 
@@ -38,7 +92,7 @@ const server = http.createServer(function (req, res) {
         buffer += decoder.end();
 
         // Choose the handler this request should go to, if one is not found then go for notFound handler.
-        let chosenHandler = typeof(router[trimmedPath]) !== "undefined" ? router[trimmedPath] : handlers.notFound;
+        let chosenHandler = typeof (router[trimmedPath]) !== "undefined" ? router[trimmedPath] : handlers.notFound;
 
         // Construct the data object to be sent to the handler.
         let data = {
@@ -50,7 +104,7 @@ const server = http.createServer(function (req, res) {
         };
 
         // Route the request to the handler specified by the route (trimmedPath).
-        chosenHandler(data, function(statusCode=200, payload={}) {
+        chosenHandler(data, function (statusCode = 200, payload = {}) {
             // Convert the payload to a string.
             let payloadString = JSON.stringify(payload);
 
@@ -64,28 +118,15 @@ const server = http.createServer(function (req, res) {
         });
     })
 
-});
-
-// Define route handlers.
-let handlers = {};
-
-// Sample handler.
-handlers.sample = function(data, callback) {
-    // Callback a http status code, and a payload object (JSON).
-    callback(406, {"name": "sample handler"});
-};
-
-// Not found handler.
-handlers.notFound = function(data, callback) {
-    callback(404);
-};
-
-// Defining a request router.
-let router = {
-    "sample": handlers.sample
 }
 
-// Start listening for requests.
-server.listen(config.port, () => {
-    console.log("Server started listenin on port:", config.port, "in", config.envName, "mode");
-})
+
+// Start listening for requests. HTTP server
+httpServer.listen(config.httpPort, () => {
+    console.log("Server started listenin on port:", config.httpPort);
+});
+
+// Instantiate the HTTPS server.
+httpsServer.listen(config.httpsPort, () => {
+    console.log("Server started listenin on port:", config.httpsPort);
+});
