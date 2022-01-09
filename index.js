@@ -8,24 +8,11 @@ const url = require("url");
 const StringDecoder = require("string_decoder").StringDecoder;
 const https = require("https");
 const fs = require("fs");
-const config = require("./config");
+const config = require("./lib/config");
 const _data = require('./lib/data');
+const handlers = require('./lib/handlers');
+const helpers = require('./lib/helpers');
 
-// TESTING
-// @TODO delete this.
-// _data.create('test', 'newFile', {'foo': 'bar'}, function(err) {
-//     console.log("This was the error", err);
-// });
-// _data.read('test', 'newFile', function(err, data) {
-//     console.log("This was the error while reading file: ", err);
-//     console.log("This is the data from file:", data);
-// });
-// _data.update('test', 'newFile', {'fizz': 'buzz'}, function(err) {
-//     console.log("This was the error while updating", err);
-// });
-// _data.delete('test', 'newFile', function(err) {
-//     console.log("Error while deleting file: ", err);
-// });
 
 // Intsantiate the http server
 const httpServer = http.createServer(function (req, res) {
@@ -43,26 +30,13 @@ const httpsServer = https.createServer(httpsServerOptions, function (err, res) {
 });
 
 
-// Define route handlers.
-let handlers = {};
-
-// Ping handler, to check the health of app.
-handlers.ping = function (data, callback) {
-    // Callback a http status code, and a payload object (JSON).
-    callback(200);
-};
-
-// Not found handler.
-handlers.notFound = function (data, callback) {
-    callback(404);
-};
-
 // Defining a request router.
 let router = {
-    "ping": handlers.ping
+    "ping": handlers.ping,
+    "users": handlers.users
 }
 
-// All the server logic for both the thtp and https server.
+// All the server logic for both the http and https server.
 let unifiedServer = function (req, res) {
     // Get the url and parse it.
     let parsedUrl = url.parse(req.url, true);
@@ -100,7 +74,7 @@ let unifiedServer = function (req, res) {
             queryStringObject,
             method,
             headers,
-            "payload": buffer
+            "payload": helpers.parseJsonToObject(buffer)
         };
 
         // Route the request to the handler specified by the route (trimmedPath).
