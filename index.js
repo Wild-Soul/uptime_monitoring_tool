@@ -20,7 +20,7 @@ const httpServer = http.createServer(function (req, res) {
 });
 
 // Instantiate the https server.
-let httpsServerOptions =  {
+let httpsServerOptions = {
     "key": fs.readFileSync("./https/key.pem"),
     "cert": fs.readFileSync("./https/cert.pem")
 };
