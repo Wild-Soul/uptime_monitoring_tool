@@ -33,7 +33,8 @@ const httpsServer = https.createServer(httpsServerOptions, function (err, res) {
 // Defining a request router.
 let router = {
     "ping": handlers.ping,
-    "users": handlers.users
+    "users": handlers.users,
+    "tokens": handlers.tokens
 }
 
 // All the server logic for both the http and https server.
